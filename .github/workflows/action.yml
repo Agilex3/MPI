@@ -25,23 +25,23 @@ jobs:
 
       - name: Restore dependencies
         run: |
-          if [ -f "Catalog/Catalog.sln" ]; then
-            dotnet restore Catalog/Catalog.sln
-          elif [ -f "Catalog.sln" ]; then
-            dotnet restore Catalog.sln
+          if [ -f "Catalogueue/Catalogue.sln" ]; then
+            dotnet restore Catalogue/Catalogue.sln
+          elif [ -f "Catalogue.sln" ]; then
+            dotnet restore Catalogue.sln
           else
             echo "Error: Solution file not found!"
             exit 1
           fi
 
       - name: Build project
-        run: dotnet build Catalog.sln --configuration Release --no-restore
+        run: dotnet build Catalogue.sln --configuration Release --no-restore
 
       - name: Run tests
-        run: dotnet test Catalog.sln --configuration Release --no-restore --verbosity normal
+        run: dotnet test Catalogue.sln --configuration Release --no-restore --verbosity normal
 
       - name: Publish application
-        run: dotnet publish Catalog.sln --configuration Release --no-restore --output publish/
+        run: dotnet publish Catalogue.sln --configuration Release --no-restore --output publish/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
