@@ -25,8 +25,8 @@ jobs:
 
       - name: Restore dependencies
         run: |
-          if [ -f "Catalogue/Catalogue.sln" ]; then
-            dotnet restore Catalogue/Catalogue.sln
+          if [ -f "./Catalogue/Catalogue.sln" ]; then
+            dotnet restore ./Catalogue/Catalogue.sln
           elif [ -f "Catalogue.sln" ]; then
             dotnet restore Catalogue.sln
           else
