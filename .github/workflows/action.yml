@@ -15,28 +15,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: List directory structure
-        run: ls -R  # Debugging - vezi structura folderelor
+      - name: Debug - List directory structure
+        run: ls -R  # Debugging - check file structure
 
       - name: Setup .NET 8 SDK
         uses: actions/setup-dotnet@v4.3.0
         with:
-          dotnet-version: 8.0.x  # Actualizat la .NET 8
+          dotnet-version: 8.0.x  
 
       - name: Restore dependencies
-        run: dotnet restore Catalog/Catalog.sln
+        run: |
+          if [ -f "Catalog/Catalog.sln" ]; then
+            dotnet restore Catalog/Catalog.sln
+          elif [ -f "Catalog.sln" ]; then
+            dotnet restore Catalog.sln
+          else
+            echo "Error: Solution file not found!"
+            exit 1
+          fi
 
       - name: Build project
-        run: dotnet build Catalog/Catalog.sln --configuration Release --no-restore
+        run: dotnet build Catalog.sln --configuration Release --no-restore
 
       - name: Run tests
-        run: dotnet test Catalog/Catalog.sln --configuration Release --no-restore --verbosity normal
+        run: dotnet test Catalog.sln --configuration Release --no-restore --verbosity normal
 
       - name: Publish application
-        run: dotnet publish Catalog/Catalog.sln --configuration Release --no-restore --output Catalog/publish/
+        run: dotnet publish Catalog.sln --configuration Release --no-restore --output publish/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: published-app
-          path: Catalog/publish/\
+          path: publish/
