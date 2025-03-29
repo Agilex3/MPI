@@ -19,7 +19,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LoginPath = "/login";  // C?tre pagina de login
         options.LogoutPath = "/logout"; // C?tre pagina de logout
         options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Expir? dup? 30 de minute
-        options.SlidingExpiration = true;  // Reînnoie?te sesiunea la fiecare cerere
+        options.SlidingExpiration = true;  // Reï¿½nnoie?te sesiunea la fiecare cerere
     });
 
 // Add services to the container.
@@ -28,7 +28,8 @@ builder.Services.AddRazorComponents()
 
 var app = builder.Build();
 
-// Testeaz? conexiunea la baza de date înainte de a porni aplica?ia
+
+// Testeaz? conexiunea la baza de date ï¿½nainte de a porni aplica?ia
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
@@ -50,11 +51,11 @@ using (var scope = app.Services.CreateScope())
         //user.SetPassword("password123"); // Parol? nesigur?, dar f?r? hashing
 
 
-        //// Adaug? utilizatorul în baza de date
+        //// Adaug? utilizatorul ï¿½n baza de date
         //dbContext.Users.Add(user);
         try
         {
-            // Salveaz? modific?rile în baza de date
+            // Salveaz? modific?rile ï¿½n baza de date
             await dbContext.SaveChangesAsync();
             Console.WriteLine("Utilizator ad?ugat cu succes!");
         }
@@ -70,6 +71,7 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"Eroare la conectarea la baza de date: {ex.Message}");
     }
 }
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
