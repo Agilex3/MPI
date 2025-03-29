@@ -1,4 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
+using BCrypt.Net;
+
 
 namespace Catalogue.Models
 {
@@ -12,5 +15,17 @@ namespace Catalogue.Models
         public string password { get; set; }
         public string role { get; set; }
         public DateTime created_at { get; set; }
+
+
+
+        public void SetPassword(string newPassword)
+        {
+            password = newPassword; // NU se face hashing (NESIGUR!)
+        }
+
+        public bool VerifyPassword(string inputPassword)
+        {
+            return password == inputPassword; // Comparare directă (NESIGUR!)
+        }
     }
 }
