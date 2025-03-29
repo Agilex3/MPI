@@ -1,26 +1,6 @@
 using Catalogue.Components;
-using Microsoft.EntityFrameworkCore;  // Adaug? acest using pentru DbContext
-using Catalogue.Data;  // Add this using directive for MyDbContext
-using Catalogue.Models;  // Add this using directive for User
-using Microsoft.AspNetCore.Authentication.Cookies;
 
-
-// Modific? semn?tura metodei Main s? fie async
 var builder = WebApplication.CreateBuilder(args);
-
-//Configurare DbContext
-builder.Services.AddDbContext<MyDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Configurare autentificare cu cookie
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/login";  // C?tre pagina de login
-        options.LogoutPath = "/logout"; // C?tre pagina de logout
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Expir? dup? 30 de minute
-        options.SlidingExpiration = true;  // Reînnoie?te sesiunea la fiecare cerere
-    });
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -28,7 +8,8 @@ builder.Services.AddRazorComponents()
 
 var app = builder.Build();
 
-// Testeaz? conexiunea la baza de date înainte de a porni aplica?ia
+
+// Testeaz? conexiunea la baza de date ï¿½nainte de a porni aplica?ia
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
@@ -50,11 +31,11 @@ using (var scope = app.Services.CreateScope())
         //user.SetPassword("password123"); // Parol? nesigur?, dar f?r? hashing
 
 
-        //// Adaug? utilizatorul în baza de date
+        //// Adaug? utilizatorul ï¿½n baza de date
         //dbContext.Users.Add(user);
         try
         {
-            // Salveaz? modific?rile în baza de date
+            // Salveaz? modific?rile ï¿½n baza de date
             await dbContext.SaveChangesAsync();
             Console.WriteLine("Utilizator ad?ugat cu succes!");
         }
@@ -71,6 +52,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -80,16 +62,11 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 app.UseAntiforgery();
-
-// Autentificare ?i autorizare
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-//app.Run();
-await app.RunAsync();
-
+app.Run();

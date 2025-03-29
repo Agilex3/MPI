@@ -1,50 +1,40 @@
-name: CI
+name: .NET Core Desktop
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    runs-on: windows-latest
+    env:
+      Solution_Name: Catalogue/Catalogue.sln
+      Wap_Project_Directory: Catalogue
+      Wap_Project_Path: Catalogue/Catalogue.csproj
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Debug - List directory structure
-        run: ls -R  # Debugging - check file structure
-
-      - name: Setup .NET 8 SDK
-        uses: actions/setup-dotnet@v4.3.0
         with:
-          dotnet-version: 8.0.x  
+          fetch-depth: 0
 
-      - name: Restore dependencies
-        run: |
-          if [ -f "./Catalogue/Catalogue.sln" ]; then
-            dotnet restore ./Catalogue/Catalogue.sln
-          elif [ -f "Catalogue.sln" ]; then
-            dotnet restore Catalogue.sln
-          else
-            echo "Error: Solution file not found!"
-            exit 1
-          fi
-
-      - name: Build project
-        run: dotnet build Catalogue.sln --configuration Release --no-restore
-
-      - name: Run tests
-        run: dotnet test Catalogue.sln --configuration Release --no-restore --verbosity normal
-
-      - name: Publish application
-        run: dotnet publish Catalogue.sln --configuration Release --no-restore --output publish/
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      # Install the .NET Core workload
+      - name: Install .NET Core
+        uses: actions/setup-dotnet@v4
         with:
-          name: published-app
-          path: publish/
+          dotnet-version: 8.0.x
+
+      # Add MSBuild to the PATH
+      - name: Setup MSBuild.exe
+        uses: microsoft/setup-msbuild@v2
+
+      # Restore the application to populate the obj folder with RuntimeIdentifiers
+      - name: Restore the application
+        run: msbuild ${{ env.Solution_Name }} /t:Restore /p:Configuration=${{ matrix.configuration }}
+        env:
+          Configuration: ${{ matrix.configuration }}
