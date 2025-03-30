@@ -1,102 +1,104 @@
 using Catalogue.Components;
-using Microsoft.EntityFrameworkCore;  // Adaug? acest using pentru DbContext
-using Catalogue.Data;  // Add this using directive for MyDbContext
-using Catalogue.Models;  // Add this using directive for User
+using Catalogue.Data;
+using Catalogue.Models;
+using Catalogue.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
 
-
-// Modific? semn?tura metodei Main s? fie async
 var builder = WebApplication.CreateBuilder(args);
 
-//Configurare DbContext
+// ------------------------------
+// 1. CONFIGURARE SERVICII
+// ------------------------------
+
+// 1.1 DbContext pentru SQL Server
 builder.Services.AddDbContext<MyDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Configurare autentificare cu cookie
+// 1.2 Autentificare cu cookie
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/login";  // C?tre pagina de login
-        options.LogoutPath = "/logout"; // C?tre pagina de logout
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Expir? dup? 30 de minute
-        options.SlidingExpiration = true;  // Re�nnoie?te sesiunea la fiecare cerere
+        options.LoginPath = "/login";
+        options.LogoutPath = "/logout";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        options.SlidingExpiration = true;
     });
 
-// Add services to the container.
+// 1.3 Servicii personalizate
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<CourseService>();
+//builder.Services.AddScoped<EnrollmentService>();
+builder.Services.AddScoped<GradeService>();
+
+// 1.4 Suport pentru API + MVC + Razor Components
+builder.Services.AddControllers();               // pentru [ApiController]
+builder.Services.AddControllersWithViews();     // pentru MVC clasic
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-
-// Testeaz? conexiunea la baza de date �nainte de a porni aplica?ia
+// ------------------------------
+// 2. TEST CONEXIUNE LA BAZĂ DE DATE
+// ------------------------------
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+
     try
     {
-        // Execut? o simpl? interogare pentru a verifica conexiunea
         var usersCount = await dbContext.Users.CountAsync();
-        Console.WriteLine($"Conexiunea a fost realizat? cu succes! Num?rul de utilizatori: {usersCount}");
+        Console.WriteLine($"✅ Conexiune DB reușită! Utilizatori existenți: {usersCount}");
 
-        //// Adaug? un utilizator de test indiferent de num?rul de utilizatori
-        //var user = new User
-        //{
-        //    first_name = "Test",
-        //    last_name = "User",
-        //    email = "test.user@example.com",
-        //    role = "student",
-        //    created_at = DateTime.Now // Adaug? data cre?rii pentru a respecta structura entit??ii
-        //};
-        //user.SetPassword("password123"); // Parol? nesigur?, dar f?r? hashing
-
-
-        //// Adaug? utilizatorul �n baza de date
-        //dbContext.Users.Add(user);
-        try
+        // Dacă vrei să adaugi un utilizator de test:
+        /*
+        var user = new User
         {
-            // Salveaz? modific?rile �n baza de date
-            await dbContext.SaveChangesAsync();
-            Console.WriteLine("Utilizator ad?ugat cu succes!");
-        }
-        catch (Exception ex)
-        {
-            // Captur?m orice eroare care apare la salvarea modific?rilor
-            Console.WriteLine($"A ap?rut o eroare la salvarea utilizatorului: {ex.Message}");
-        }
+            first_name = "Test",
+            last_name = "User",
+            email = "test@example.com",
+            password = "1234",
+            role = "student",
+            created_at = DateTime.Now
+        };
+        dbContext.Users.Add(user);
+        await dbContext.SaveChangesAsync();
+        */
     }
     catch (Exception ex)
     {
-        // Afi?eaz? eroarea dac? nu se poate conecta
-        Console.WriteLine($"Eroare la conectarea la baza de date: {ex.Message}");
+        Console.WriteLine($"❌ Eroare conectare DB: {ex.Message}");
     }
 }
 
-
-// Configure the HTTP request pipeline.
+// ------------------------------
+// 3. PIPELINE HTTP
+// ------------------------------
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+    app.UseHsts(); // securitate pentru HTTPS
 }
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
-// Autentificare ?i autorizare
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Mapare controller-e API (cele cu [ApiController])
+app.MapControllers();
+
+// Mapare controller-e MVC (ex: UserController cu views)
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+// Razor components (Blazor)
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-//app.Run();
+// Rulăm aplicația
 await app.RunAsync();
-
