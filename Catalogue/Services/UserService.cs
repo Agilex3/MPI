@@ -1,13 +1,14 @@
-﻿using Catalogue.Models;
+﻿using Catalogue.Data;
+using Catalogue.Models;
 using System;
 
 namespace Catalogue.Services
 {
     public class UserService
     {
-        private readonly AppDbContext _context;
+        private readonly MyDbContext _context;
 
-        public UserService(AppDbContext context)
+        public UserService(MyDbContext context)
         {
             _context = context;
         }
