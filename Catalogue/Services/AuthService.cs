@@ -1,22 +1,22 @@
 ﻿using Catalogue.Data;
 using Catalogue.Models;
-using Microsoft.IdentityModel.Tokens;
-using System.Data.Entity;
-using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using System.Text;
 
 namespace Catalogue.Services
 {
     public class AuthService
     {
         private readonly MyDbContext _dbContext;
-        private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AuthService(MyDbContext dbContext, IConfiguration configuration)
+        public AuthService(MyDbContext dbContext, IHttpContextAccessor httpContextAccessor)
         {
             _dbContext = dbContext;
-            _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<string> RegisterAsync(string email, string password, string firstName, string lastName, string role)
@@ -33,41 +33,46 @@ namespace Catalogue.Services
                 created_at = DateTime.UtcNow
             };
 
-            user.SetPassword(password); // Fără hashing
+            user.SetPassword(password); // Setează parola (ar trebui să fie hashuită)
 
             _dbContext.Users.Add(user);
             await _dbContext.SaveChangesAsync();
 
-            return GenerateJwtToken(user);
+            return "User registered successfully";
         }
 
-        public async Task<string> LoginAsync(string email, string password)
+        public async Task<bool> LoginAsync(string email, string password)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.email == email);
-            if (user == null || !user.VerifyPassword(password)) // Comparare directă
-                return "Invalid credentials";
+            if (user == null || !user.VerifyPassword(password)) // Verifică parola
+                return false;
 
-            return GenerateJwtToken(user);
-        }
-
-
-        private string GenerateJwtToken(User user)
-        {
-            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]);
-            var claims = new[]
+            var claims = new List<Claim>
             {
-            new Claim(ClaimTypes.NameIdentifier, user.id.ToString()),
-            new Claim(ClaimTypes.Email, user.email),
-            new Claim(ClaimTypes.Role, user.role)
+                new Claim(ClaimTypes.NameIdentifier, user.id.ToString()),
+                new Claim(ClaimTypes.Email, user.email),
+                new Claim(ClaimTypes.Role, user.role)
             };
 
-            var token = new JwtSecurityToken(
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(2),
-                signingCredentials: new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256));
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = true
+            };
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            await _httpContextAccessor.HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(claimsIdentity),
+                authProperties);
+
+            return true;
         }
+
+        public async Task LogoutAsync()
+        {
+            await _httpContextAccessor.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+
         public async Task<string> GeneratePasswordResetToken(string email)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.email == email);
@@ -86,9 +91,10 @@ namespace Catalogue.Services
             _dbContext.PasswordResetTokens.Add(resetToken);
             await _dbContext.SaveChangesAsync();
 
-            // Aici trimiți tokenul prin email (de implementat separat)
+            // Aici ar trebui să trimiți tokenul prin email (de implementat separat)
             return token;
         }
+
         public async Task<string> ResetPassword(string token, string newPassword)
         {
             var resetToken = await _dbContext.PasswordResetTokens.FirstOrDefaultAsync(t => t.Token == token);
@@ -104,7 +110,5 @@ namespace Catalogue.Services
 
             return "Password reset successful";
         }
-
-
     }
 }
