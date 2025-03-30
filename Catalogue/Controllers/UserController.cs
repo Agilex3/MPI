@@ -5,40 +5,85 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Catalogue.Controllers
 {
-    public class UserController :Controller
+    [ApiController]
+    [Route("api/[controller]")]
+    public class UserApiController : ControllerBase
     {
         private readonly MyDbContext _context;
 
-        public UserController(MyDbContext context)
+        public UserApiController(MyDbContext context)
         {
             _context = context;
         }
 
-        // GET: User/Create
-        public IActionResult Create()
+        // GET: api/UserApi
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
         {
-            return View();
+            var users = await _context.Users.ToListAsync();
+            return Ok(users);
         }
 
-        // POST: User/Create
+        // GET: api/UserApi/5
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+                return NotFound(new { message = "User not found" });
+
+            return Ok(user);
+        }
+
+        // POST: api/UserApi
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("FirstName,LastName,Email,Password,Role")] User user)
+        public async Task<IActionResult> Create([FromBody] User user)
         {
-            if (ModelState.IsValid)
-            {
-                user.created_at = DateTime.Now;
-                _context.Add(user);  // Adaugă utilizatorul în context
-                await _context.SaveChangesAsync();  // Salvează modificările în baza de date
-                return RedirectToAction(nameof(Index));  // După salvare, redirecționează spre Index
-            }
-            return View(user);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            user.created_at = DateTime.Now;
+            user.SetPassword(user.password); // sau doar user.password = ... dacă nu folosești hashing
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "User created successfully", user });
         }
 
-        // GET: User/Index - Afișează utilizatorii din baza de date
-        public async Task<IActionResult> Index()
+        // PUT: api/UserApi/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] User updatedUser)
         {
-            return View(await _context.Users.ToListAsync());  // Afișează lista de utilizatori
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+                return NotFound(new { message = "User not found" });
+
+            user.first_name = updatedUser.first_name;
+            user.last_name = updatedUser.last_name;
+            user.email = updatedUser.email;
+            user.role = updatedUser.role;
+
+            if (!string.IsNullOrWhiteSpace(updatedUser.password))
+            {
+                user.SetPassword(updatedUser.password);
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "User updated successfully", user });
+        }
+
+        // DELETE: api/UserApi/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+                return NotFound(new { message = "User not found" });
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "User deleted successfully" });
         }
     }
 }
