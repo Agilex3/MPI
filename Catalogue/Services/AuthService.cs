@@ -1,10 +1,12 @@
-﻿using Catalogue.Data;
+﻿using Catalogue.Controllers;
+using Catalogue.Data;
 using Catalogue.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using static System.Net.WebRequestMethods;
 
 namespace Catalogue.Services
 {
@@ -73,42 +75,17 @@ namespace Catalogue.Services
             await _httpContextAccessor.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         }
 
-        public async Task<string> GeneratePasswordResetToken(string email)
+        public async Task<string> ResetPassword(string email, string newPassword)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.email == email);
-            if (user == null) return "User not found";
+            if (user == null)
+                return "If the email exists, you will receive a password reset confirmation."; // Avoid exposing valid emails
 
-            var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()); // Token random
-            var expiration = DateTime.UtcNow.AddHours(1); // Expiră într-o oră
-
-            var resetToken = new PasswordResetToken
-            {
-                UserId = user.id,
-                Token = token,
-                Expiration = expiration
-            };
-
-            _dbContext.PasswordResetTokens.Add(resetToken);
+            user.SetPassword(newPassword); // Hash and save the new password
             await _dbContext.SaveChangesAsync();
 
-            // Aici ar trebui să trimiți tokenul prin email (de implementat separat)
-            return token;
+            return "Password reset successfully.";
         }
 
-        public async Task<string> ResetPassword(string token, string newPassword)
-        {
-            var resetToken = await _dbContext.PasswordResetTokens.FirstOrDefaultAsync(t => t.Token == token);
-            if (resetToken == null || resetToken.Expiration < DateTime.UtcNow)
-                return "Invalid or expired token";
-
-            var user = await _dbContext.Users.FindAsync(resetToken.UserId);
-            if (user == null) return "User not found";
-
-            user.SetPassword(newPassword);
-            _dbContext.PasswordResetTokens.Remove(resetToken);
-            await _dbContext.SaveChangesAsync();
-
-            return "Password reset successful";
-        }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Catalogue.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace Catalogue.Controllers
 {
@@ -43,19 +44,13 @@ namespace Catalogue.Controllers
             return Ok(new { message = "Logout successful" });
         }
 
-        [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordModel model)
-        {
-            var token = await _authService.GeneratePasswordResetToken(model.Email);
-            return Ok(new { token }); // Ar trebui să trimiți prin email în practică
-        }
-
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel model)
         {
-            var result = await _authService.ResetPassword(model.Token, model.NewPassword);
+            var result = await _authService.ResetPassword(model.Email, model.NewPassword);
             return Ok(new { message = result });
         }
+
     }
 
     public class RegisterModel
@@ -80,7 +75,13 @@ namespace Catalogue.Controllers
 
     public class ResetPasswordModel
     {
-        public string Token { get; set; }
+        [Required, EmailAddress]
+        public string Email { get; set; }
+
+        [Required]
         public string NewPassword { get; set; }
+
+        [Required, Compare("NewPassword", ErrorMessage = "Passwords do not match.")]
+        public string ConfirmPassword { get; set; }
     }
 }

@@ -27,6 +27,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;  // Refresh the session on each request
     });
 
+
 // 1.3 Servicii personalizate
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<CourseService>();
@@ -112,3 +113,5 @@ app.MapRazorComponents<App>()
 
 // Rulăm aplicația
 await app.RunAsync();
+
+
