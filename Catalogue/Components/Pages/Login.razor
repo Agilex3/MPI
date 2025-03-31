@@ -1,6 +1,8 @@
 ﻿@page "/"
 @using System.Net.Http.Json;
 @using System.ComponentModel.DataAnnotations
+@using Catalogue.Models
+
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
@@ -25,7 +27,7 @@
 </EditForm>
 
 <p class="text-sm text-center mt-4">
-    Don't have an account? <a href="/register" class="text-blue-500">Sign up</a>
+    Don't have an account? <a href="/signup" class="text-blue-500">Sign up</a>
 </p>
 
 @code {
@@ -88,8 +90,4 @@
         public string Password { get; set; } = string.Empty;
     }
 
-    public class ResponseMessage
-    {
-        public string Message { get; set; } = string.Empty;
-    }
 }
