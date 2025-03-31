@@ -15,20 +15,23 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<MyDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddHttpContextAccessor();
+
 // 1.2 Autentificare cu cookie
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/login";
-        options.LogoutPath = "/logout";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
-        options.SlidingExpiration = true;
+        options.LoginPath = "/login";  // Redirect to login page if unauthenticated
+        options.LogoutPath = "/logout"; // Redirect to logout page
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Session expiration
+        options.SlidingExpiration = true;  // Refresh the session on each request
     });
+
 
 // 1.3 Servicii personalizate
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<CourseService>();
-//builder.Services.AddScoped<EnrollmentService>();
+// builder.Services.AddScoped<EnrollmentService>(); // Commented out if you don't need it
 builder.Services.AddScoped<GradeService>();
 
 // 1.4 Suport pentru API + MVC + Razor Components
@@ -36,6 +39,12 @@ builder.Services.AddControllers();               // pentru [ApiController]
 builder.Services.AddControllersWithViews();     // pentru MVC clasic
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Register the AuthService for handling authentication
+builder.Services.AddScoped<AuthService>();
+
+// Register HttpClient for making API requests
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
@@ -48,10 +57,11 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
+        // Test connection by querying users count
         var usersCount = await dbContext.Users.CountAsync();
         Console.WriteLine($"✅ Conexiune DB reușită! Utilizatori existenți: {usersCount}");
 
-        // Dacă vrei să adaugi un utilizator de test:
+        // If you want to add a test user, you can uncomment this part:
         /*
         var user = new User
         {
@@ -77,7 +87,7 @@ using (var scope = app.Services.CreateScope())
 // ------------------------------
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseExceptionHandler("/Error");
     app.UseHsts(); // securitate pentru HTTPS
 }
 
@@ -85,6 +95,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
+// Authentication and Authorization Middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -102,3 +113,5 @@ app.MapRazorComponents<App>()
 
 // Rulăm aplicația
 await app.RunAsync();
+
+
