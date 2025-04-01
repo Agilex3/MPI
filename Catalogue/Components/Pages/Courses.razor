@@ -1,0 +1,155 @@
+﻿@page "/courses"
+@using Catalogue.Models
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<h3>Courses</h3>
+
+@if (courses == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Teacher</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var course in courses)
+            {
+                <tr>
+                    <td>@course.Id</td>
+                    <td>@course.Name</td>
+                    <td>@course.Description</td>
+                    <td>@course.TeacherId</td>
+                    <td>
+                        <button class="btn btn-warning" @onclick="() => EditCourse(course)">Edit</button>
+                        <button class="btn btn-danger" @onclick="() => DeleteCourse(course.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<h3>@(newCourse.Id == 0 ? "Add" : "Edit") Course</h3>
+<input type="text" @bind="newCourse.Name" placeholder="Course Name" />
+<input type="text" @bind="newCourse.Description" placeholder="Description" />
+<input type="number" @bind="newCourse.TeacherId" placeholder="Teacher ID" />
+<button class="btn btn-success" @onclick="SaveCourse">@((newCourse.Id == 0) ? "Add" : "Update")</button>
+
+@if (newCourse.Id != 0)
+{
+    <button class="btn btn-secondary" @onclick="ResetCourseForm">Back to Add</button>
+}
+
+@code {
+    private List<Course> courses;
+    private Course newCourse = new Course();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Ensure BaseAddress is set correctly for API
+        if (Http.BaseAddress == null)
+        {
+            Http.BaseAddress = new Uri("https://localhost:7096/"); // Replace with your API base URL
+        }
+
+        await LoadCourses();
+    }
+
+    private void ResetCourseForm()
+    {
+        newCourse = new Course(); // Reset to a new course form
+    }
+
+    private async Task LoadCourses()
+    {
+        try
+        {
+            courses = await Http.GetFromJsonAsync<List<Course>>("api/CourseApi");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching courses: {ex.Message}");
+        }
+    }
+
+    private async Task SaveCourse()
+    {
+        if (newCourse.Id == 0)
+        {
+            await CreateCourse();
+        }
+        else
+        {
+            await UpdateCourse();
+        }
+    }
+
+    private async Task CreateCourse()
+    {
+        Console.WriteLine($"Sending Course Data: Name = {newCourse.Name}, Description = {newCourse.Description}, TeacherId = {newCourse.TeacherId}");
+
+        var response = await Http.PostAsJsonAsync("api/CourseApi", newCourse); // POST to create the course
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"Error: {response.StatusCode}, Message: {responseContent}");
+        }
+        else
+        {
+            await LoadCourses(); // Refresh courses list
+            newCourse = new Course(); // Reset form
+        }
+    }
+
+    private async Task UpdateCourse()
+    {
+        Console.WriteLine($"Updating Course Data: Id = {newCourse.Id}, Name = {newCourse.Name}, Description = {newCourse.Description}, TeacherId = {newCourse.TeacherId}");
+        var teacher = await Http.GetFromJsonAsync<User>($"api/UserApi/{newCourse.TeacherId}");
+        newCourse.Teacher = teacher;
+
+        var response = await Http.PutAsJsonAsync($"api/CourseApi/{newCourse.Id}", newCourse); // PUT to update the course
+        var responseContent = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"Error: {response.StatusCode}, Message: {responseContent}");
+        }
+        else
+        {
+            await LoadCourses(); // Refresh the list of courses
+            newCourse = new Course(); // Reset form
+        }
+    }
+
+    private async Task DeleteCourse(int id)
+    {
+        var response = await Http.DeleteAsync($"api/CourseApi/{id}");
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadCourses(); // Refresh the list after deletion
+        }
+    }
+
+    private void EditCourse(Course course)
+    {
+        newCourse = new Course
+            {
+                Id = course.Id,
+                Name = course.Name,
+                Description = course.Description,
+                TeacherId = course.TeacherId
+            };
+    }
+}

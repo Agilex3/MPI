@@ -35,13 +35,30 @@ namespace Catalogue.Controllers
         }
 
         // POST: api/CourseApi
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Course course)
+        public async Task<IActionResult> Create([FromBody] CourseDTO courseDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            // Map the CourseDTO to the Course entity
+            var course = new Course
+            {
+                Name = courseDto.Name,
+                Description = courseDto.Description,
+                TeacherId = courseDto.TeacherId,
+            };
+
+            // Ensure CourseId is set to 0 for auto-generation
+            course.Id = 0;
+
+            // Call the service to create the course
             var created = await _courseService.CreateCourseAsync(course);
+
+            if (created == null)
+            {
+                return BadRequest(new { message = "Course creation failed" });
+            }
+
             return Ok(new { message = "Course created successfully", created });
         }
 

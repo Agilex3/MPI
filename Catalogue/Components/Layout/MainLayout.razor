@@ -1,23 +1,48 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager Navigation
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+@code {
+    private bool IsTeacherAuthenticated => Navigation.Uri.Contains("/teacherhome")
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+
+
+                                        || Navigation.Uri.Contains("/students")
+
+
+
+                                        || Navigation.Uri.Contains("/grades")
+
+
+
+                                        || Navigation.Uri.Contains("/courses");
+}
+
+
+<div class="page flex">
+    @if (IsTeacherAuthenticated)
+
+
+
+    {
+        <div class="sidebar w-64 bg-gray-200 h-screen p-4">
+            <NavTeacherMenu />
         </div>
+        <div class="top-row w-full bg-gray-800 text-white py-2 px-4 flex justify-between">
+            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank" class="text-black text-lg font-semibold">
+                About
+            </a>
+        </div>
+    }
 
-        <article class="content px-4">
+    <main class="flex-1 p-4">
+        <article class="content">
             @Body
         </article>
     </main>
 </div>
 
-<div id="blazor-error-ui">
+<div id="blazor-error-ui" class="fixed bottom-0 left-0 w-full bg-red-500 text-white p-2 text-center">
     An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
+    <a href="" class="underline">Reload</a>
+    <a class="dismiss cursor-pointer ml-4">🗙</a>
 </div>
