@@ -65,7 +65,7 @@
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<ResponseMessage>();
-                Navigation.NavigateTo("/home");
+                Navigation.NavigateTo("/teacherhome");
             }
             else
             {
