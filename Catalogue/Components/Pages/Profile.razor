@@ -1,0 +1,25 @@
+﻿@page "/profile"
+@using Catalogue.Services
+@inject NavigationManager Navigation
+@inject UserSessionService UserSessionService
+
+<h3 class="text-xl font-bold mb-4 text-center">User Profile</h3>
+
+@if (UserSessionService.UserId == null)
+{
+    <p class="text-red-500 text-center">You are not logged in.</p>
+}
+else
+{
+    <div class="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6">
+        <p><strong>ID:</strong> @UserSessionService.UserId</p>
+        <p><strong>Email:</strong> @UserSessionService.UserEmail</p>
+        <p><strong>First name:</strong> @UserSessionService.UserFirstName</p>
+        <p><strong>Last name:</strong> @UserSessionService.UserLastName</p>
+        <p><strong>Role:</strong> @UserSessionService.UserRole</p>
+    </div>
+}
+
+@code {
+
+}

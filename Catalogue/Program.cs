@@ -39,6 +39,7 @@ builder.Services.AddControllers();               // pentru [ApiController]
 builder.Services.AddControllersWithViews();     // pentru MVC clasic
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddSingleton<UserSessionService>();
 
 
 // Register the AuthService for handling authentication
