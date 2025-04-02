@@ -1,7 +1,189 @@
 ﻿@page "/students"
+@using System.Net.Http.Json
+@using Catalogue.Models
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
 
-<h3>Students</h3>
+<h3 class="text-xl font-bold mb-4 text-center">Manage Students</h3>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <p class="text-red-500 text-sm text-center mb-2">@ErrorMessage</p>
+}
+
+@if (students != null && students.Any())
+{
+    <table class="table-auto w-full mt-4 border">
+        <thead>
+            <tr>
+                <th class="border px-4 py-2">First Name</th>
+                <th class="border px-4 py-2">Last Name</th>
+                <th class="border px-4 py-2">Email</th>
+                <th class="border px-4 py-2">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var student in students)
+            {
+                <tr>
+                    <td class="border px-4 py-2">@student.first_name</td>
+                    <td class="border px-4 py-2">@student.last_name</td>
+                    <td class="border px-4 py-2">@student.email</td>
+                    <td class="border px-4 py-2">
+                        <button class="bg-yellow-500 text-white px-2 py-1 rounded" @onclick="() => EditStudent(student.id)">Edit</button>
+                        <button class="bg-red-500 text-white px-2 py-1 rounded" @onclick="() => DeleteStudent(student.id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="text-center mt-4">No students available.</p>
+}
+
+@if (showStudentModal)
+{
+    <div class="modal" style="display: block;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@ModalTitle</h5>
+                    <button type="button" class="btn-close" @onclick="CloseStudentModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@studentModel" OnValidSubmit="HandleSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="mb-3">
+                            <label class="form-label">First Name</label>
+                            <InputText @bind-Value="studentModel.first_name" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Last Name</label>
+                            <InputText @bind-Value="studentModel.last_name" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <InputText @bind-Value="studentModel.email" class="form-control" type="email" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <InputText @bind-Value="studentModel.password" class="form-control" type="password" />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Save Student</button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<p class="text-sm text-center mt-4">
+    <button class="btn btn-primary" @onclick="ShowStudentModal">Add New Student</button>
+</p>
 
 @code {
+    private List<User> students;
+    private User studentModel = new User { role = "student" };
+    private bool showStudentModal = false;
+    private string ErrorMessage;
+    private string ModalTitle = "Add Student";
 
+    protected override async Task OnInitializedAsync()
+    {
+        if (Http.BaseAddress == null)
+        {
+            Http.BaseAddress = new Uri(Navigation.BaseUri);
+        }
+        await LoadStudents();
+    }
+
+    private async Task LoadStudents()
+    {
+        students = await Http.GetFromJsonAsync<List<User>>("api/UserApi");
+        students = students.Where(s => s.role == "student").ToList();
+    }
+
+    private void ShowStudentModal()
+    {
+        studentModel = new User { role = "student" };
+        ModalTitle = "Add Student";
+        showStudentModal = true;
+    }
+
+    private void CloseStudentModal()
+    {
+        showStudentModal = false;
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (studentModel.id == 0)
+        {
+            await AddStudent();
+        }
+        else
+        {
+            await UpdateStudent();
+        }
+    }
+
+    private async Task AddStudent()
+    {
+        var response = await Http.PostAsJsonAsync("api/UserApi", studentModel);
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadStudents();
+            CloseStudentModal();
+        }
+        else
+        {
+            ErrorMessage = "Failed to add student.";
+        }
+    }
+
+    private async Task UpdateStudent()
+    {
+        var response = await Http.PutAsJsonAsync($"api/UserApi/{studentModel.id}", studentModel);
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadStudents();
+            CloseStudentModal();
+        }
+        else
+        {
+            ErrorMessage = "Failed to update student.";
+        }
+    }
+
+    private async Task EditStudent(int id)
+    {
+        studentModel = students.FirstOrDefault(s => s.id == id);
+        if (studentModel != null)
+        {
+            ModalTitle = "Edit Student";
+            showStudentModal = true;
+        }
+    }
+
+    private async Task DeleteStudent(int id)
+    {
+        var response = await Http.DeleteAsync($"api/UserApi/{id}");
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadStudents();
+        }
+        else
+        {
+            ErrorMessage = "Failed to delete student.";
+        }
+    }
 }
