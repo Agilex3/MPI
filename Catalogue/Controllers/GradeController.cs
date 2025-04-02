@@ -1,6 +1,7 @@
 ﻿using Catalogue.Models;
 using Catalogue.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Catalogue.Controllers
 {
@@ -36,11 +37,23 @@ namespace Catalogue.Controllers
 
         // POST: api/GradeApi
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Grade grade)
+        public async Task<IActionResult> Create([FromBody] GradeDTO gradeDTO)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+        var grade = new Grade
+            {
+            StudentId = gradeDTO.StudentId,
+            //Student = gradeDTO.Student,
+            CourseId = gradeDTO.CourseId,
+            //Course = gradeDTO.Course,
+            GradeValue = gradeDTO.GradeValue,
+            GradedAt = gradeDTO.GradedAt,
+            };
+
+            // Ensure CourseId is set to 0 for auto-generation
+            grade.Id = 0;
             var created = await _gradeService.CreateGradeAsync(grade);
             return Ok(new { message = "Grade created successfully", created });
         }

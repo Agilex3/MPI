@@ -40,6 +40,7 @@ builder.Services.AddControllersWithViews();     // pentru MVC clasic
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+
 // Register the AuthService for handling authentication
 builder.Services.AddScoped<AuthService>();
 
