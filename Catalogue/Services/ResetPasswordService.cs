@@ -14,23 +14,23 @@
             _http = http;
         }
 
-        public async Task<ResponseMessage> ResetPasswordAsync(ResetPasswordModel model)
+        public async Task<ResponseMessageModel> ResetPasswordAsync(ResetPasswordModel model)
         {
             var response = await _http.PostAsJsonAsync("api/auth/resetpassword", model);
 
             if (response.IsSuccessStatusCode)
             {
-                return new ResponseMessage { Success = true, Message = "Password reset successfully!" };
+                return new ResponseMessageModel { Success = true, Message = "Password reset successfully!" };
             }
             else
             {
-                var errorResponse = await response.Content.ReadFromJsonAsync<ResponseMessage>();
-                return errorResponse ?? new ResponseMessage { Success = false, Message = "An error occurred during password reset." };
+                var errorResponse = await response.Content.ReadFromJsonAsync<ResponseMessageModel>();
+                return errorResponse ?? new ResponseMessageModel { Success = false, Message = "An error occurred during password reset." };
             }
         }
     }
 
-    public class ResponseMessage
+    public class ResponseMessageModel
     {
         public bool Success { get; set; }
         public string Message { get; set; }
