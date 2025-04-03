@@ -34,8 +34,8 @@
                     <td class="border px-4 py-2">@grade.GradeValue</td>
                     <td class="border px-4 py-2">@grade.GradedAt.ToShortDateString()</td>
                     <td class="border px-4 py-2">
-                        <button class="bg-yellow-500 text-white px-2 py-1 rounded" @onclick="() => EditGrade(grade.Id)">Edit</button>
-                        <button class="bg-red-500 text-white px-2 py-1 rounded" @onclick="() => DeleteGrade(grade.Id)">Delete</button>
+                        <button class="btn btn-warning" @onclick="() => EditGrade(grade.Id)">Edit</button>
+                        <button class="btn btn-danger" @onclick="() => DeleteGrade(grade.Id)">Delete</button>
                     </td>
                 </tr>
             }
@@ -93,7 +93,7 @@ else
                             <InputDate @bind-Value="gradeModel.GradedAt" class="form-control" />
                         </div>
 
-                        <button type="submit" class="btn btn-primary">Save Grade</button>
+                        <button type="submit" class="btn btn-success">Save Grade</button>
                     </EditForm>
                 </div>
             </div>
@@ -102,7 +102,7 @@ else
 }
 
 <p class="text-sm text-center mt-4">
-    <button class="btn btn-primary" @onclick="ShowAddGradeModal">Add New Grade</button>
+    <button class="btn btn-success" @onclick="ShowAddGradeModal">Add New Grade</button>
 </p>
 
 @code {
