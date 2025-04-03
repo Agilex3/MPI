@@ -18,15 +18,18 @@
 
 <EditForm Model="@loginModel" OnSubmit="HandleSubmit" FormName="cv">
     <DataAnnotationsValidator />
-    <div class="space-y-4">
-        <input type="email" class="w-full p-2 border rounded" placeholder="Email"
+    <div class="space-y-4" style="display:flex; flex-direction: column; margin:0px 100px 0px 100px;">
+        <input type="email" style="margin:10px;" class="w-full p-2 border rounded" placeholder="Email"
                @bind="loginModel.Email" required />
-        <input type="password" class="w-full p-2 border rounded" placeholder="Password"
+        <input type="password" style="margin:10px;" class="w-full p-2 border rounded" placeholder="Password"
                @bind="loginModel.Password" required />
 
-        <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded" @onclick="OnLoginClick">Login</button>
+        <button type="submit" style="margin:10px;" class="btn btn-primary" @onclick="OnLoginClick">
+            Login
+        </button>
     </div>
 </EditForm>
+
 
 <p class="text-sm text-center mt-4">
     Don't have an account? <a href="/signup" class="text-blue-500">Sign up</a>
@@ -35,6 +38,7 @@
 <p class="text-sm text-center mt-4">
     Forgot password? <a href="/resetpassword" class="text-blue-500">Change password</a>
 </p>
+
 
 @code {
     private LoginModel loginModel = new LoginModel(); 
@@ -84,7 +88,15 @@
                         UserSessionService.UserEmail = user.email;
                     }
                 }
-                Navigation.NavigateTo("/teacherhome");
+
+                if (UserSessionService.UserRole == "teacher")
+                {
+                    Navigation.NavigateTo("/teacherhome");
+                }
+                else
+                {
+                    Navigation.NavigateTo("/studenthome");
+                }
             }
             else
             {

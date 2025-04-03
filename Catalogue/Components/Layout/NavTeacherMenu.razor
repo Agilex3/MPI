@@ -1,12 +1,14 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿<div>
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Catalogue</a>
     </div>
 </div>
-
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
     <nav class="flex-column">
         <div class="nav-item px-3">
+
             <NavLink class="nav-link" href="courses">
                 <span class="bi bi-clipboard-data" aria-hidden="true"></span> Courses
             </NavLink>
@@ -18,10 +20,17 @@
             </NavLink>
         </div>
 
-        <div class="nav-item px-3">
+        <div class="nav-item px-3" style="white-space: nowrap;">
             <NavLink class="nav-link" href="students">
                 <span class="bi bi-people" aria-hidden="true"></span> Manage Students
             </NavLink>
         </div>
+        <div class="top-row w-full text-white py-2 px-4 flex justify-between" style="background:none;">
+            <a href="profile" target="_blank" class="text-lg font-semibold">
+                About
+            </a>
+        </div>
     </nav>
+    </div>
+</div>
 </div>

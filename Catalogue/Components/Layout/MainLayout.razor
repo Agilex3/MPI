@@ -1,36 +1,42 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager Navigation
 
+
 @code {
     private bool IsTeacherAuthenticated => Navigation.Uri.Contains("/teacherhome")
 
 
 
-                                        || Navigation.Uri.Contains("/students")
-
-
-
                                         || Navigation.Uri.Contains("/grades")
 
-
+                                        || Navigation.Uri.Contains("/students")
 
                                         || Navigation.Uri.Contains("/courses");
+
+    private bool IsStudentAuthenticated => Navigation.Uri.Contains("/studenthome")
+
+                                         
+
+                                        || Navigation.Uri.Contains("/viewstudentgrades")
+
+                                        || Navigation.Uri.Contains("/viewcourses");
+
 }
 
 
 <div class="page flex">
     @if (IsTeacherAuthenticated)
-
-
-
     {
         <div class="sidebar w-64 bg-gray-200 h-screen p-4">
             <NavTeacherMenu />
         </div>
-        <div class="top-row w-full bg-gray-800 text-white py-2 px-4 flex justify-between">
-            <a href="profile" target="_blank" class="text-black text-lg font-semibold">
-                About
-            </a>
+
+    }
+
+    @if (IsStudentAuthenticated)
+    {
+        <div class="sidebar w-64 bg-gray-200 h-screen p-4">
+            <NavStudentMenu />
         </div>
     }
 
