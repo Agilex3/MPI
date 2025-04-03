@@ -1,0 +1,84 @@
+﻿@page "/viewcourses"
+@using Catalogue.Models
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>Courses</h3>
+
+@if (courses == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Teacher</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var course in courses)
+            {
+                <tr>
+                    <td>@course.Id</td>
+                    <td>@course.Name</td>
+                    <td>@course.Description</td>
+                    <td>@(teacherNames.TryGetValue(course.TeacherId, out var name) ? name : "Unknown")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Course> courses;
+    private Course newCourse = new Course();
+    private Dictionary<int, string> teacherNames = new(); // Stores teacher ID -> Name mapping
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Ensure BaseAddress is set correctly for API
+        if (Http.BaseAddress == null)
+        {
+            Http.BaseAddress = new Uri("https://localhost:7096/"); // Replace with your API base URL
+        }
+
+        await LoadCourses();
+        await LoadTeachers();
+    }
+
+    private async Task LoadCourses()
+    {
+        try
+        {
+            courses = await Http.GetFromJsonAsync<List<Course>>("api/CourseApi");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching courses: {ex.Message}");
+        }
+    }
+
+
+    private async Task LoadTeachers()
+    {
+        try
+        {
+            var teachers = await Http.GetFromJsonAsync<List<User>>("api/UserApi");
+            if (teachers != null)
+            {
+                teacherNames = teachers.ToDictionary(t => t.id, t => $"{t.first_name} {t.last_name}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching teachers: {ex.Message}");
+        }
+    }
+
+}

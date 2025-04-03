@@ -84,7 +84,15 @@
                         UserSessionService.UserEmail = user.email;
                     }
                 }
-                Navigation.NavigateTo("/teacherhome");
+
+                if (UserSessionService.UserRole == "teacher")
+                {
+                    Navigation.NavigateTo("/teacherhome");
+                }
+                else
+                {
+                    Navigation.NavigateTo("/studenthome");
+                }
             }
             else
             {
