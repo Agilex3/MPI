@@ -1,11 +1,11 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿<div class="top-row ps-3 navbar navbar-dark" style="display:flex; flex-direction:column; align-items:center;">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Catalogue</a>
     </div>
 </div>
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
+    <nav class="flex-column" style="display:flex; flex-direction:column; align-items:center;">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="viewcourses">
                 <span class="bi bi-clipboard-data" aria-hidden="true"></span> Courses
@@ -17,6 +17,10 @@
                 <span class="bi bi-pencil-square" aria-hidden="true"></span> Grades
             </NavLink>
         </div>
-
+        <div class="top-row w-full text-white py-2 px-4 flex justify-between" style="background:none;">
+            <a href="profile" target="_blank" class=" text-lg font-semibold">
+                About
+            </a>
+        </div>
     </nav>
 </div>
