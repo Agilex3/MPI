@@ -1,0 +1,105 @@
+﻿@page "/averagegrades"
+@using Microsoft.AspNetCore.Components.Authorization
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+
+<h3 class="text-xl font-bold mb-4 text-center">Average Grades</h3>
+
+@if (averages == null)
+{
+    <p>Loading...</p>
+}
+else if (!averages.Any())
+{
+    <p class="text-center text-gray-500">No averages found.</p>
+}
+else
+{
+    <table class="table-auto w-full mt-4 border">
+        <thead>
+            <tr>
+                @if (IsProfessor)
+                {
+                    <th class="border px-4 py-2">Student</th>
+                }
+                <th class="border px-4 py-2">Course</th>
+                <th class="border px-4 py-2">Average</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in averages)
+            {
+                <tr>
+                    @if (IsProfessor)
+                    {
+                        <td class="border px-4 py-2">@item.Student</td>
+                    }
+                    <td class="border px-4 py-2">@item.Course</td>
+                    <td class="border px-4 py-2">@item.Average</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<AverageModel> averages;
+    private bool IsProfessor;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        // Verifică dacă utilizatorul este autentificat
+        Console.WriteLine($"IsAuthenticated: {user.Identity.IsAuthenticated}");
+
+        // Afișează toate claim-urile
+        Console.WriteLine("User Claims:");
+        if (!user.Claims.Any())
+        {
+            Console.WriteLine("No claims available.");
+        }
+        else
+        {
+            foreach (var claim in user.Claims)
+            {
+                Console.WriteLine($"{claim.Type}: {claim.Value}");
+            }
+        }
+
+        IsProfessor = user.IsInRole("Profesor");
+
+        if (Http.BaseAddress == null)
+        {
+            Http.BaseAddress = new Uri(Navigation.BaseUri);
+        }
+
+        if (IsProfessor)
+        {
+            averages = await Http.GetFromJsonAsync<List<AverageModel>>("api/GradeApi/averages");
+        }
+        else
+        {
+            var idClaim = user.FindFirst("id");
+            if (idClaim == null || string.IsNullOrEmpty(idClaim.Value))
+            {
+                averages = new List<AverageModel>();
+                Console.WriteLine("No id claim found for user");
+                return;
+            }
+
+            var studentId = int.Parse(idClaim.Value);
+            Console.WriteLine($"StudentId: {studentId}");
+            averages = await Http.GetFromJsonAsync<List<AverageModel>>($"api/GradeApi/average/student/{studentId}");
+        }
+    }
+
+    public class AverageModel
+    {
+        public string Student { get; set; } // poate fi null pentru student
+        public string Course { get; set; }
+        public decimal Average { get; set; }
+    }
+}
