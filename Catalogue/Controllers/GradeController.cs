@@ -79,5 +79,40 @@ namespace Catalogue.Controllers
 
             return Ok(new { message = "Grade deleted successfully" });
         }
+
+        // GET: api/GradeApi/average/5
+        [HttpGet("average/{studentId}")]
+        public async Task<IActionResult> GetAverageGrade(int studentId)
+        {
+            var average = await _gradeService.CalculateAvgGradeForStudent(studentId);
+
+            if (average == null)
+                return Ok(new { message = "No grades available for this student." });
+
+            return Ok(new { studentId, averageGrade = average });
+        }
+
+        // Pentru profesor - vezi toate mediile pe materii, pe fiecare student
+        [HttpGet("averages")]
+        public async Task<IActionResult> GetAllAverages()
+        {
+            var averages = await _gradeService.GetAllStudentAveragesByCourse();
+            return Ok(averages);
+        }
+
+        // Pentru student - doar media lui
+        [HttpGet("average/student/{studentId}")]
+        public async Task<IActionResult> GetAverageForStudent(int studentId)
+        {
+            var result = await _gradeService.GetStudentAveragesByCourse(studentId);
+
+            if (result == null || !result.Any())
+                return Ok(new { message = "No averages found." });
+
+            return Ok(result);
+        }
+
+
+
     }
 }
