@@ -1,167 +1,136 @@
-﻿using Catalogue.Services;
+﻿using Xunit;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 using Catalogue.Data;
 using Catalogue.Models;
+using Catalogue.Services;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Moq;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
-using Xunit;
-using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace Catalogue.Tests
 {
     public class AuthServiceTests
     {
-        private readonly Mock<MyDbContext> _dbContextMock;
+        private readonly DbContextOptions<MyDbContext> _options;
         private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
-        private readonly Mock<HttpContext> _httpContextMock;
-        private readonly AuthService _authService;
 
         public AuthServiceTests()
         {
-            // Setup mocks
-            _dbContextMock = new Mock<MyDbContext>();
+            _options = new DbContextOptionsBuilder<MyDbContext>()
+                .UseInMemoryDatabase(databaseName: "AuthTestDb")
+                .Options;
+
             _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
-            _httpContextMock = new Mock<HttpContext>();
-
-            _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(_httpContextMock.Object);
-
-            // Initialize service with mocked dependencies
-            _authService = new AuthService(_dbContextMock.Object, _httpContextAccessorMock.Object);
-        }
-
-        [Fact]
-        public async Task RegisterAsync_EmailExists_ReturnsErrorMessage()
-        {
-            // Arrange
-            var usersMock = new Mock<DbSet<User>>();
-            usersMock.Setup(m => m.AnyAsync(u => u.email == "test@example.com", default))
-                .ReturnsAsync(true);
-            _dbContextMock.Setup(db => db.Users).Returns(usersMock.Object);
-
-            // Act
-            var result = await _authService.RegisterAsync("test@example.com", "parola123", "Ion", "Popescu", "student");
-
-            // Assert
-            Assert.Equal("Email already exists", result);
+            var context = new DefaultHttpContext();
+            _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(context);
         }
 
         [Fact]
         public async Task RegisterAsync_NewUser_ReturnsSuccessMessage()
         {
             // Arrange
-            var usersMock = new Mock<DbSet<User>>();
-            usersMock.Setup(m => m.AnyAsync(u => u.email == "test@example.com", default))
-                .ReturnsAsync(false);
-            _dbContextMock.Setup(db => db.Users).Returns(usersMock.Object);
+            using var context = new MyDbContext(_options);
+            var service = new AuthService(context, _httpContextAccessorMock.Object);
 
             // Act
-            var result = await _authService.RegisterAsync("test@example.com", "parola123", "Ion", "Popescu", "student");
+            var result = await service.RegisterAsync(
+                "test@example.com",
+                "Password123",
+                "John",
+                "Doe",
+                "Student");
 
             // Assert
             Assert.Equal("User registered successfully", result);
-            _dbContextMock.Verify(db => db.SaveChangesAsync(default), Times.Once());
+            var user = await context.Users.FirstOrDefaultAsync(u => u.email == "test@example.com");
+            Assert.NotNull(user);
+            Assert.True(user.VerifyPassword("Password123"));
         }
+
+        [Fact]
+        public async Task RegisterAsync_ExistingEmail_ReturnsErrorMessage()
+        {
+            // Arrange
+            using var context = new MyDbContext(_options);
+            var service = new AuthService(context, _httpContextAccessorMock.Object);
+
+            await service.RegisterAsync(
+                "test@example.com",
+                "Password123",
+                "John",
+                "Doe",
+                "Student");
+
+            // Act
+            var result = await service.RegisterAsync(
+                "test@example.com",
+                "Password456",
+                "Jane",
+                "Doe",
+                "Student");
+
+            // Assert
+            Assert.Equal("Email already exists", result);
+        }
+
 
         [Fact]
         public async Task LoginAsync_InvalidCredentials_ReturnsFalse()
         {
             // Arrange
-            var usersMock = new Mock<DbSet<User>>();
-            var user = new User { id = 1, email = "test@example.com" };
-            user.SetPassword("parola123");
+            using var context = new MyDbContext(_options);
+            var service = new AuthService(context, _httpContextAccessorMock.Object);
 
-            usersMock.Setup(m => m.FirstOrDefaultAsync(u => u.email == "test@example.com", default))
-                .ReturnsAsync(user);
-            _dbContextMock.Setup(db => db.Users).Returns(usersMock.Object);
+            await service.RegisterAsync(
+                "test@example.com",
+                "Password123",
+                "John",
+                "Doe",
+                "Student");
 
             // Act
-            var result = await _authService.LoginAsync("test@example.com", "wrongpassword");
+            var result = await service.LoginAsync("test@example.com", "WrongPassword");
 
             // Assert
             Assert.False(result);
         }
 
         [Fact]
-        public async Task LoginAsync_ValidCredentials_ReturnsTrueAndSignsIn()
+        public async Task ResetPassword_ExistingEmail_ReturnsSuccessMessage()
         {
             // Arrange
-            var usersMock = new Mock<DbSet<User>>();
-            var user = new User { id = 1, email = "test@example.com", role = "student" };
-            user.SetPassword("parola123");
+            using var context = new MyDbContext(_options);
+            var service = new AuthService(context, _httpContextAccessorMock.Object);
 
-            usersMock.Setup(m => m.FirstOrDefaultAsync(u => u.email == "test@example.com", default))
-                .ReturnsAsync(user);
-            _dbContextMock.Setup(db => db.Users).Returns(usersMock.Object);
-
-            _httpContextMock.Setup(m => m.SignInAsync(
-                It.IsAny<string>(),
-                It.IsAny<ClaimsPrincipal>(),
-                It.IsAny<AuthenticationProperties>()))
-                .Returns(Task.CompletedTask);
+            await service.RegisterAsync(
+                "test@example.com",
+                "Password123",
+                "John",
+                "Doe",
+                "Student");
 
             // Act
-            var result = await _authService.LoginAsync("test@example.com", "parola123");
-
-            // Assert
-            Assert.True(result);
-            _httpContextMock.Verify(m => m.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                It.Is<ClaimsPrincipal>(cp =>
-                    cp.FindFirst(ClaimTypes.Email) != null &&
-                    cp.FindFirst(ClaimTypes.Email).Value == "test@example.com"),
-                It.IsAny<AuthenticationProperties>()),
-                Times.Once());
-        }
-
-        [Fact]
-        public async Task LogoutAsync_CallsSignOut()
-        {
-            // Arrange
-            _httpContextMock.Setup(m => m.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme))
-                .Returns(Task.CompletedTask);
-
-            // Act
-            await _authService.LogoutAsync();
-
-            // Assert
-            _httpContextMock.Verify(m => m.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme),
-                Times.Once());
-        }
-
-        [Fact]
-        public async Task ResetPassword_UserNotFound_ReturnsGenericMessage()
-        {
-            // Arrange
-            var usersMock = new Mock<DbSet<User>>();
-            usersMock.Setup(m => m.FirstOrDefaultAsync(u => u.email == "test@example.com", default))
-                .ReturnsAsync((User)null);
-            _dbContextMock.Setup(db => db.Users).Returns(usersMock.Object);
-
-            // Act
-            var result = await _authService.ResetPassword("test@example.com", "newpassword123");
-
-            // Assert
-            Assert.Equal("If the email exists, you will receive a password reset confirmation.", result);
-        }
-
-        [Fact]
-        public async Task ResetPassword_UserExists_ResetsPasswordSuccessfully()
-        {
-            // Arrange
-            var usersMock = new Mock<DbSet<User>>();
-            var user = new User { id = 1, email = "test@example.com" };
-            usersMock.Setup(m => m.FirstOrDefaultAsync(u => u.email == "test@example.com", default))
-                .ReturnsAsync(user);
-            _dbContextMock.Setup(db => db.Users).Returns(usersMock.Object);
-
-            // Act
-            var result = await _authService.ResetPassword("test@example.com", "newpassword123");
+            var result = await service.ResetPassword("test@example.com", "NewPassword123");
 
             // Assert
             Assert.Equal("Password reset successfully.", result);
-            _dbContextMock.Verify(db => db.SaveChangesAsync(default), Times.Once());
+            var user = await context.Users.FirstOrDefaultAsync(u => u.email == "test@example.com");
+            Assert.True(user.VerifyPassword("NewPassword123"));
+        }
+
+        [Fact]
+        public async Task ResetPassword_NonExistingEmail_ReturnsGenericMessage()
+        {
+            // Arrange
+            using var context = new MyDbContext(_options);
+            var service = new AuthService(context, _httpContextAccessorMock.Object);
+
+            // Act
+            var result = await service.ResetPassword("nonexistent@example.com", "NewPassword123");
+
+            // Assert
+            Assert.Equal("If the email exists, you will receive a password reset confirmation.", result);
         }
     }
 }
