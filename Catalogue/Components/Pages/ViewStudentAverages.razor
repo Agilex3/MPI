@@ -1,0 +1,67 @@
+﻿@page "/student/averages"
+@using System.Net.Http.Json
+@using Catalogue.Models
+@using Catalogue.Services
+@inject HttpClient Http
+@inject UserSessionService UserSessionService
+@inject NavigationManager Navigation
+
+<h3 class="text-xl font-bold mb-4 text-center">My Grade Averages</h3>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <p class="text-red-500 text-sm text-center mb-2">@ErrorMessage</p>
+}
+
+@if (averages != null && averages.Any())
+{
+    <table class="table-auto w-full mt-4 border">
+        <thead>
+            <tr>
+                <th class="border px-4 py-2">Course</th>
+                <th class="border px-4 py-2">Average Grade</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var avg in averages)
+            {
+                <tr>
+                    <td class="border px-4 py-2">@avg.Course</td>
+                    <td class="border px-4 py-2">@avg.Average</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="text-center mt-4">No grade averages available.</p>
+}
+
+@code {
+    private string ErrorMessage;
+    private List<CourseAverage> averages;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAverages();
+    }
+
+    private async Task LoadAverages()
+    {
+        try
+        {
+            if (Http.BaseAddress == null)
+            {
+                Http.BaseAddress = new Uri(Navigation.BaseUri);
+            }
+
+            int studentId = UserSessionService.UserId;
+            averages = await Http.GetFromJsonAsync<List<CourseAverage>>($"api/GradeApi/average/student/{studentId}");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error loading averages: {ex.Message}";
+        }
+    }
+}

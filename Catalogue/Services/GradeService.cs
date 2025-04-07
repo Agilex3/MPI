@@ -69,5 +69,51 @@ namespace Catalogue.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<decimal?> CalculateAvgGradeForStudent(int studentId)
+        {
+            var grades = await _context.Grades
+                .Where(g => g.StudentId == studentId)
+                .ToListAsync();
+
+            if (!grades.Any())
+                return null; 
+
+            return Math.Round(grades.Average(g => g.GradeValue), 2);
+        }
+
+        public async Task<List<object>> GetStudentAveragesByCourse(int studentId)
+        {
+            var results = await _context.Grades
+                .Where(g => g.StudentId == studentId)
+                .GroupBy(g => g.Course.Name)
+                .Select(g => new
+                {
+                    Course = g.Key,
+                    Average = Math.Round(g.Average(x => x.GradeValue), 2)
+                })
+                .ToListAsync();
+
+            return results.Cast<object>().ToList();
+        }
+
+        public async Task<List<object>> GetAllStudentAveragesByCourse()
+        {
+            var results = await _context.Grades
+                .Include(g => g.Student)
+                .Include(g => g.Course)
+                .GroupBy(g => new { g.StudentId, g.Student.first_name, g.Student.last_name, g.Course.Name })
+                .Select(g => new
+                {
+                    Student = $"{g.Key.first_name} {g.Key.last_name}",
+                    Course = g.Key.Name,
+                    Average = Math.Round(g.Average(x => x.GradeValue), 2)
+                })
+                .ToListAsync();
+
+            return results.Cast<object>().ToList();
+        }
+
+
     }
 }

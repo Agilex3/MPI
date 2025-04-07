@@ -1,0 +1,147 @@
+@page "/grades/history"
+@using System.Net.Http.Json
+@using Catalogue.Models
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<h3 class="text-xl font-bold mb-4 text-center">Grade History</h3>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <p class="text-red-500 text-sm text-center mb-2">@ErrorMessage</p>
+}
+else if (students == null)
+{
+    <p class="text-center">Loading students...</p>
+}
+else
+{
+    <table class="table w-full table-striped border">
+        <thead>
+            <tr>
+                <th class="border px-4 py-2">Name</th>
+                <th class="border px-4 py-2">Email</th>
+                <th class="border px-4 py-2">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var student in students)
+            {
+                <tr>
+                    <td class="border px-4 py-2">@student.first_name @student.last_name</td>
+                    <td class="border px-4 py-2">@student.email</td>
+                    <td class="border px-4 py-2">
+                        <button class="btn btn-info" @onclick="@(() => OnToggleGrades(student.id))">
+                            @(expandedStudentId == student.id ? "Hide Grades" : "View Grades")
+                        </button>
+                    </td>
+                </tr>
+
+                @if (expandedStudentId == student.id)
+                {
+                    var grades = gradesByStudent.ContainsKey(student.id)
+                    ? gradesByStudent[student.id]
+                    : new List<Grade>();
+
+                    <tr>
+                        <td colspan="3" class="border px-4 py-2 bg-light">
+                            @if (isLoadingGrades)
+                            {
+                                <p>Loading grades...</p>
+                            }
+                            else if (grades.Any())
+                            {
+                                <table class="table w-full border mt-2">
+                                    <thead>
+                                        <tr>
+                                            <th class="border px-2 py-1">Course</th>
+                                            <th class="border px-2 py-1">Grade</th>
+                                            <th class="border px-2 py-1">Graded At</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var grade in grades)
+                                        {
+                                            <tr>
+                                                <td class="border px-2 py-1">@grade.Course?.Name ?? "Unknown"</td>
+                                                <td class="border px-2 py-1">@grade.GradeValue</td>
+                                                <td class="border px-2 py-1">@grade.GradedAt.ToShortDateString()</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                            else
+                            {
+                                <p class="text-muted">No grades found for this student.</p>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<User> students;
+    private List<Grade> allGrades;
+    private Dictionary<int, List<Grade>> gradesByStudent = new();
+    private string ErrorMessage;
+    private int? expandedStudentId = null;
+    private bool isLoadingGrades = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (Http.BaseAddress == null)
+                Http.BaseAddress = new Uri(Navigation.BaseUri);
+
+            students = await Http.GetFromJsonAsync<List<User>>("api/UserApi");
+            allGrades = await Http.GetFromJsonAsync<List<Grade>>("api/GradeApi");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to load data: {ex.Message}";
+        }
+    }
+
+    private async Task OnToggleGrades(int studentId)
+    {
+        Console.WriteLine($"[DEBUG] Toggle called for student ID: {studentId}");
+
+        if (expandedStudentId == studentId)
+        {
+            expandedStudentId = null;
+            return;
+        }
+
+        expandedStudentId = studentId;
+        isLoadingGrades = true;
+        StateHasChanged();
+
+        try
+        {
+            if (!gradesByStudent.ContainsKey(studentId))
+            {
+                var grades = allGrades
+                    .Where(g => g.StudentId == studentId)
+                    .OrderByDescending(g => g.GradedAt)
+                    .ToList();
+
+                gradesByStudent[studentId] = grades;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to load grades: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingGrades = false;
+            StateHasChanged();
+        }
+    }
+}
