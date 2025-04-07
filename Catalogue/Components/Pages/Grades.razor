@@ -5,7 +5,6 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-
 <h3 class="text-xl font-bold mb-4 text-center">Manage Grades</h3>
 
 @if (!string.IsNullOrEmpty(ErrorMessage))
@@ -34,8 +33,9 @@
                     <td class="border px-4 py-2">@grade.GradeValue</td>
                     <td class="border px-4 py-2">@grade.GradedAt.ToShortDateString()</td>
                     <td class="border px-4 py-2">
-                        <button class="btn btn-warning" @onclick="() => EditGrade(grade.Id)">Edit</button>
-                        <button class="btn btn-danger" @onclick="() => DeleteGrade(grade.Id)">Delete</button>
+                        <button class="btn btn-warning me-1" @onclick="() => EditGrade(grade.Id)">Edit</button>
+                        <button class="btn btn-danger me-1" @onclick="() => DeleteGrade(grade.Id)">Delete</button>
+                        <button class="btn btn-info" @onclick="() => ViewGradeHistory(grade.StudentId)">View History</button>
                     </td>
                 </tr>
             }
@@ -84,8 +84,7 @@ else
 
                         <div class="mb-3">
                             <label class="form-label">Grade</label>
-                            <InputNumber @bind-Value="gradeModel.GradeValue" min="1"
-                                         max="10"  class="form-control" />
+                            <InputNumber @bind-Value="gradeModel.GradeValue" min="1" max="10" class="form-control" />
                         </div>
 
                         <div class="mb-3">
@@ -95,6 +94,49 @@ else
 
                         <button type="submit" class="btn btn-success">Save Grade</button>
                     </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Grade History Modal -->
+@if (showGradeHistoryModal)
+{
+    <div class="modal" style="display: block;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Grade History for @selectedStudentName</h5>
+                    <button type="button" class="btn-close" @onclick="CloseGradeHistoryModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (gradeHistory != null && gradeHistory.Any())
+                    {
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Grade</th>
+                                    <th>Graded At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in gradeHistory)
+                                {
+                                    <tr>
+                                        <td>@item.Course.Name</td>
+                                        <td>@item.GradeValue</td>
+                                        <td>@item.GradedAt.ToShortDateString()</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p>No grades found for this student.</p>
+                    }
                 </div>
             </div>
         </div>
@@ -112,6 +154,9 @@ else
     private Grade gradeModel = new Grade();
     private GradeDTO gradeDTOModel = new GradeDTO();
     private bool showAddGradeModal = false;
+    private bool showGradeHistoryModal = false;
+    private List<Grade> gradeHistory = new();
+    private string selectedStudentName = "";
     private string ErrorMessage;
     private string ModalTitle = "Add Grade";
 
@@ -124,7 +169,6 @@ else
 
     private async Task LoadGrades()
     {
-
         if (Http.BaseAddress == null)
         {
             Http.BaseAddress = new Uri(Navigation.BaseUri);
@@ -134,7 +178,6 @@ else
 
     private async Task LoadStudents()
     {
-
         if (Http.BaseAddress == null)
         {
             Http.BaseAddress = new Uri(Navigation.BaseUri);
@@ -144,7 +187,6 @@ else
 
     private async Task LoadCourses()
     {
-
         if (Http.BaseAddress == null)
         {
             Http.BaseAddress = new Uri(Navigation.BaseUri);
@@ -156,7 +198,7 @@ else
     {
         gradeModel = new Grade
             {
-                GradedAt = DateTime.Today // Set to today's date
+                GradedAt = DateTime.Today
             };
         ModalTitle = "Add Grade";
         showAddGradeModal = true;
@@ -169,11 +211,11 @@ else
 
     private async Task HandleSubmit()
     {
-        if (gradeModel.Id == 0) // If grade ID is 0, we're adding a new grade
+        if (gradeModel.Id == 0)
         {
             await AddGrade();
         }
-        else // If there's an ID, we're updating an existing grade
+        else
         {
             await UpdateGrade();
         }
@@ -181,55 +223,40 @@ else
 
     private async Task AddGrade()
     {
-        if (Http.BaseAddress == null)
-        {
-            Http.BaseAddress = new Uri(Navigation.BaseUri);
-        }
-
         try
         {
-            // Ensure the StudentId and CourseId are valid
             var student = students.FirstOrDefault(s => s.id == gradeModel.StudentId);
-            if (student == null)
-            {
-                ErrorMessage = "Invalid student ID selected.";
-                return;
-            }
-
             var course = courses.FirstOrDefault(c => c.Id == gradeModel.CourseId);
-            if (course == null)
+
+            if (student == null || course == null)
             {
-                ErrorMessage = "Invalid course ID selected.";
+                ErrorMessage = "Invalid student or course selection.";
                 return;
             }
 
-            // Ensure GradedAt is set to today's date if not already set
             if (gradeModel.GradedAt == default)
             {
                 gradeModel.GradedAt = DateTime.Now;
             }
 
-            // Create GradeDTO with only necessary fields
             var gradeDTOModel = new GradeDTO
                 {
                     StudentId = gradeModel.StudentId,
                     CourseId = gradeModel.CourseId,
-                    GradeValue = Math.Clamp(gradeModel.GradeValue, 1, 10), // Ensure grade is between 1 and 10
+                    GradeValue = Math.Clamp(gradeModel.GradeValue, 1, 10),
                     GradedAt = gradeModel.GradedAt,
                 };
 
-            // Send request to API
             var response = await Http.PostAsJsonAsync("api/GradeApi", gradeDTOModel);
 
             if (response.IsSuccessStatusCode)
             {
-                await LoadGrades(); // Reload grades after adding
+                await LoadGrades();
                 CloseAddGradeModal();
             }
             else
             {
-                var errorText = await response.Content.ReadAsStringAsync();
-                ErrorMessage = !string.IsNullOrWhiteSpace(errorText) ? errorText : "Failed to add grade.";
+                ErrorMessage = "Failed to add grade.";
             }
         }
         catch (Exception ex)
@@ -238,38 +265,27 @@ else
         }
     }
 
-
-
     private async Task UpdateGrade()
     {
-        if (Http.BaseAddress == null)
-        {
-            Http.BaseAddress = new Uri(Navigation.BaseUri);
-        }
-
         try
         {
-            // Caută Studentul și Cursul asociat cu gradeModel.StudentId și gradeModel.CourseId
             var student = students.FirstOrDefault(s => s.id == gradeModel.StudentId);
             var course = courses.FirstOrDefault(c => c.Id == gradeModel.CourseId);
 
-            // Verifică dacă au fost găsite
             if (student == null || course == null)
             {
                 ErrorMessage = "Invalid student or course selection.";
                 return;
             }
 
-            // Setează proprietățile Student și Course în obiectul gradeModel
             gradeModel.Student = student;
             gradeModel.Course = course;
 
-            // Trimiterea cererii de actualizare
             var response = await Http.PutAsJsonAsync($"api/GradeApi/{gradeModel.Id}", gradeModel);
 
             if (response.IsSuccessStatusCode)
             {
-                await LoadGrades(); // Reload grades after updating
+                await LoadGrades();
                 CloseAddGradeModal();
             }
             else
@@ -282,7 +298,6 @@ else
             ErrorMessage = $"An error occurred: {ex.Message}";
         }
     }
-
 
     private async Task EditGrade(int id)
     {
@@ -300,36 +315,56 @@ else
             ModalTitle = "Edit Grade";
             showAddGradeModal = true;
         }
-
-        if (gradeModel != null)
-        {
-            ModalTitle = "Edit Grade";
-            showAddGradeModal = true;
-        }
     }
 
     private async Task DeleteGrade(int id)
     {
-
-        if (Http.BaseAddress == null)
-        {
-            Http.BaseAddress = new Uri(Navigation.BaseUri);
-        }
         try
         {
             var response = await Http.DeleteAsync($"api/GradeApi/{id}");
             if (response.IsSuccessStatusCode)
             {
-                await LoadGrades(); // Reload grades after deletion
+                await LoadGrades();
             }
             else
             {
                 ErrorMessage = "Failed to delete grade.";
             }
         }
-        catch (Exception)
+        catch
         {
             ErrorMessage = "An error occurred. Please try again later.";
         }
+    }
+
+    private async Task ViewGradeHistory(int studentId)
+    {
+        try
+        {
+            if (grades == null || grades.Count == 0)
+                await LoadGrades();
+
+            if (students == null || students.Count == 0)
+                await LoadStudents();
+
+            gradeHistory = grades
+                .Where(g => g.StudentId == studentId)
+                .OrderByDescending(g => g.GradedAt)
+                .ToList();
+
+            var student = students.FirstOrDefault(s => s.id == studentId);
+            selectedStudentName = student != null ? $"{student.first_name} {student.last_name}" : "Unknown Student";
+
+            showGradeHistoryModal = true;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to load grade history: {ex.Message}";
+        }
+    }
+
+    private void CloseGradeHistoryModal()
+    {
+        showGradeHistoryModal = false;
     }
 }
