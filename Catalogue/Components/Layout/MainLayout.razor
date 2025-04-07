@@ -11,15 +11,18 @@
 
                                         || Navigation.Uri.Contains("/students")
 
-                                        || Navigation.Uri.Contains("/courses");
+                                        || Navigation.Uri.Contains("/courses")
+                                        
+                                        || Navigation.Uri.Contains("/teacher/averages");
 
     private bool IsStudentAuthenticated => Navigation.Uri.Contains("/studenthome")
 
                                          
-
                                         || Navigation.Uri.Contains("/viewstudentgrades")
 
-                                        || Navigation.Uri.Contains("/viewcourses");
+                                        || Navigation.Uri.Contains("/viewcourses")
+
+                                        || Navigation.Uri.Contains("/student/averages");
 
 }
 
