@@ -1,14 +1,17 @@
-﻿<div>
-    <div class="top-row ps-3 navbar navbar-dark">
+<div>
+    <!-- Top navbar row -->
+    <div class="top-row ps-3 navbar navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="">Catalogue</a>
         </div>
     </div>
-    <div onclick="try { document.querySelector('.navbar-toggler')?.click(); } catch (e) { console.warn(e); }">
-        <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
-            <nav class="flex-column">
-                <div class="nav-item px-3">
 
+    <!-- Sidebar nav -->
+    <div onclick="try { document.querySelector('.navbar-toggler')?.click(); } catch (e) { console.warn(e); }">
+        <div class="d-flex flex-column align-items-center text-center mt-3">
+            <nav class="nav flex-column">
+
+                <div class="nav-item px-3">
                     <NavLink class="nav-link" href="courses">
                         <span class="bi bi-clipboard-data" aria-hidden="true"></span> Courses
                     </NavLink>
@@ -25,18 +28,24 @@
                         <span class="bi bi-people" aria-hidden="true"></span> Manage Students
                     </NavLink>
                 </div>
+
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="grades/history">
                         <span class="bi bi-journal-bookmark" aria-hidden="true"></span> Grade History
                     </NavLink>
                 </div>
 
-                <div class="top-row w-full text-white py-2 px-4 flex justify-between" style="background:none;">
-                    <a href="profile" target="_blank" class="text-lg font-semibold">
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="teacher/averages">
+                        <span class="bi bi-bar-chart-line" aria-hidden="true"></span> Grade Averages
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3 mt-3">
+                    <a href="profile" target="_blank" class="nav-link fw-semibold">
                         About
                     </a>
                 </div>
-
 
             </nav>
         </div>
